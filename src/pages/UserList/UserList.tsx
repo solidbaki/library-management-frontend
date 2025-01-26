@@ -1,45 +1,46 @@
 import React, { useEffect } from "react";
-import { Typography, CircularProgress, Box, Stack } from "@mui/material";
+import { Typography, CircularProgress, Box, Stack, Button } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
 import { fetchUsers } from "../../redux/slices/usersSlice";
-import UserCard from "../../components/UserCard/UserCard";
+import { useNavigate } from "react-router-dom";
 
 const UserList: React.FC = () => {
   const dispatch = useAppDispatch();
   const { users, status } = useAppSelector((state) => state.users);
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
 
-  if (status === "loading") {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (status === "failed") {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Typography variant="h6" color="error">
-          Failed to load users. Please try again later.
-        </Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box padding={2}>
       <Typography variant="h4" gutterBottom>
-        Users
+        User List
       </Typography>
-      <Stack spacing={2}>
-        {users.map((user) => (
-          <UserCard user={user} key={user.id} />
-        ))}
-      </Stack>
+      {status === "loading" ? (
+        <CircularProgress />
+      ) : (
+        <Stack spacing={2}>
+          {users.map((user) => (
+            <Button
+              key={user.id}
+              variant="contained"
+              onClick={() => navigate(`/users/${user.id}`)}
+            >
+              {user.name}
+            </Button>
+          ))}
+        </Stack>
+      )}
+      <Button
+        variant="outlined"
+        color="primary"
+        onClick={() => navigate("/books")}
+        style={{ marginTop: "20px" }}
+      >
+        Go to Book List
+      </Button>
     </Box>
   );
 };
