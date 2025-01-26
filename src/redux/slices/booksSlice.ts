@@ -1,11 +1,23 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { BookDetail } from "./types";
 
-export interface BooksState {
-  books: BookDetail[];
-  bookDetail: BookDetail | null;
-  status: "idle" | "loading" | "failed";
+interface User {
+  id: number;
+  name: string;
+}
+
+interface Book {
+  id: number;
+  name: string;
+  author: string;
+  year: number;
+  currentOwner: User | null;
+}
+
+interface BooksState {
+  books: Book[];
+  bookDetail: Book | null;
+  status: "idle" | "loading" | "succeeded" | "failed";
 }
 
 const initialState: BooksState = {
@@ -14,13 +26,11 @@ const initialState: BooksState = {
   status: "idle",
 };
 
-// Fetch all books
 export const fetchBooks = createAsyncThunk("books/fetchBooks", async () => {
   const response = await axios.get("http://localhost:3000/books");
   return response.data;
 });
 
-// Fetch book detail
 export const fetchBookDetail = createAsyncThunk(
   "books/fetchBookDetail",
   async (bookId: number) => {
@@ -29,13 +39,15 @@ export const fetchBookDetail = createAsyncThunk(
   }
 );
 
-// Lend a book
 export const lendBook = createAsyncThunk(
   "books/lendBook",
-  async ({ bookId, userId }: { bookId: number; userId: number }) => {
+  async ({ userId, bookId }: { userId: number; bookId: number }) => {
     const response = await axios.post(
-      `http://localhost:3000/books/${bookId}/lend`,
-      { userId }
+      "http://localhost:3000/borrowed-books/borrow",
+      {
+        userId,
+        bookId,
+      }
     );
     return response.data;
   }
@@ -47,32 +59,17 @@ const booksSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchBooks.pending, (state) => {
-        state.status = "loading";
-      })
       .addCase(fetchBooks.fulfilled, (state, action) => {
-        state.status = "idle";
         state.books = action.payload;
-      })
-      .addCase(fetchBooks.rejected, (state) => {
-        state.status = "failed";
-      })
-      .addCase(fetchBookDetail.pending, (state) => {
-        state.status = "loading";
+        state.status = "succeeded";
       })
       .addCase(fetchBookDetail.fulfilled, (state, action) => {
-        state.status = "idle";
         state.bookDetail = action.payload;
-      })
-      .addCase(fetchBookDetail.rejected, (state) => {
-        state.status = "failed";
+        state.status = "succeeded";
       })
       .addCase(lendBook.fulfilled, (state, action) => {
         if (state.bookDetail) {
-          const userId = action.meta.arg.userId;
-          const userName = action.payload.userName; // Assume the API returns the user's name
-
-          state.bookDetail.currentOwner = { id: userId, name: userName }; // Update currentOwner
+          state.bookDetail.currentOwner = action.payload.user;
         }
       });
   },

@@ -1,11 +1,24 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { UserDetail } from "./types";
 
-export interface UsersState {
-  users: UserDetail[];
+interface Book {
+  id: number;
+  name: string;
+  author: string;
+  year: number;
+}
+
+interface UserDetail {
+  id: number;
+  name: string;
+  currentBooks: Book[];
+  pastBooks: Book[];
+}
+
+interface UsersState {
+  users: { id: number; name: string }[];
   userDetail: UserDetail | null;
-  status: "idle" | "loading" | "failed";
+  status: "idle" | "loading" | "succeeded" | "failed";
 }
 
 const initialState: UsersState = {
@@ -14,13 +27,11 @@ const initialState: UsersState = {
   status: "idle",
 };
 
-// Fetch all users
 export const fetchUsers = createAsyncThunk("users/fetchUsers", async () => {
   const response = await axios.get("http://localhost:3000/users");
   return response.data;
 });
 
-// Fetch user detail
 export const fetchUserDetail = createAsyncThunk(
   "users/fetchUserDetail",
   async (userId: number) => {
@@ -29,13 +40,15 @@ export const fetchUserDetail = createAsyncThunk(
   }
 );
 
-// Return a book
 export const returnBook = createAsyncThunk(
   "users/returnBook",
   async ({ userId, bookId }: { userId: number; bookId: number }) => {
     const response = await axios.post(
-      `http://localhost:3000/users/${userId}/return`,
-      { bookId }
+      "http://localhost:3000/borrowed-books/return",
+      {
+        userId,
+        bookId,
+      }
     );
     return response.data;
   }
@@ -47,25 +60,13 @@ const usersSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchUsers.pending, (state) => {
-        state.status = "loading";
-      })
       .addCase(fetchUsers.fulfilled, (state, action) => {
-        state.status = "idle";
         state.users = action.payload;
-      })
-      .addCase(fetchUsers.rejected, (state) => {
-        state.status = "failed";
-      })
-      .addCase(fetchUserDetail.pending, (state) => {
-        state.status = "loading";
+        state.status = "succeeded";
       })
       .addCase(fetchUserDetail.fulfilled, (state, action) => {
-        state.status = "idle";
         state.userDetail = action.payload;
-      })
-      .addCase(fetchUserDetail.rejected, (state) => {
-        state.status = "failed";
+        state.status = "succeeded";
       })
       .addCase(returnBook.fulfilled, (state, action) => {
         if (state.userDetail) {
